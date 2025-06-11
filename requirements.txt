@@ -6,3 +6,4 @@ newsapi-python
 twilio
 flask
 newsapi
+textblob

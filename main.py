@@ -1,10 +1,14 @@
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask
 from alerta import enviar_alerta
 
 app = Flask(__name__)
 
-@app.route('/')
-def inicio():
-    return enviar_alerta()
+@app.route("/")
+def index():
+    resultado = enviar_alerta()
+    return resultado
 
-app.run(host='0.0.0.0', port=81)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
