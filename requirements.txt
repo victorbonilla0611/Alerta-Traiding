@@ -1,0 +1,8 @@
+yfinance
+pandas
+matplotlib
+scikit-learn
+newsapi-python
+twilio
+flask
+newsapi
