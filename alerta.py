@@ -1,29 +1,22 @@
 import yfinance as yf
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from newsapi import NewsApiClient
+import datetime
 import os
 import requests
-import datetime
-
-def enviar_telegram(mensaje):
-    bot_token = os.getenv("TELEGRAM_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    data = {"chat_id": chat_id, "text": mensaje}
-    response = requests.post(url, data=data)
-    return response.json()
 
 def enviar_alerta():
-    activos = ["AAPL", "TSLA", "AMZN", "MSFT", "GOOGL", "META", "NFLX", "BTC-USD", "GC=F", "CL=F"]
+    activos = ["AAPL", "TSLA", "AMZN", "MSFT", "GOOGL", "META", "NFLX", "NVDA", "BTC-USD", "ETH-USD", "SOL-USD", "XRP-USD", "ADA-USD", "DOGE-USD", "AUDUSD=X", "GBPJPY=X", "USDCHF=X", "NZDUSD=X", "EURJPY=X", "^NDX", "SI=F", "GC=F", "CL=F"]
 
-    api_key = os.getenv("NEWS_API_KEY")
-    newsapi = NewsApiClient(api_key=api_key)
+
+    noticias_api_key = os.getenv("NEWS_API_KEY")
+    telegram_token = os.getenv("TELEGRAM_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
     mensajes = []
+
     for ticker in activos:
         df = yf.download(ticker, interval="15m", period="1d")
-
         if df.empty or len(df) < 30:
             continue
 
@@ -52,21 +45,33 @@ def enviar_alerta():
         else:
             señal = "⏸️ ESPERAR"
 
-        desde = (datetime.datetime.today() - datetime.timedelta(days=2)).strftime('%Y-%m-%d')
-        noticias = newsapi.get_everything(q=ticker, from_param=desde, sort_by="relevancy", language="en", page_size=1)
-        titular = noticias["articles"][0]["title"] if noticias["articles"] else "Sin noticias"
+        # Noticias
+        titular = "Sin noticias relevantes"
+        try:
+            import requests
+            fecha = (datetime.datetime.today() - datetime.timedelta(days=2)).strftime('%Y-%m-%d')
+            url = f"https://newsapi.org/v2/everything?q={ticker}&from={fecha}&sortBy=relevancy&language=en&pageSize=1&apiKey={noticias_api_key}"
+            res = requests.get(url).json()
+            if res.get("articles"):
+                titular = res["articles"][0]["title"]
+        except Exception as e:
+            titular = "Error al obtener noticias"
 
-        mensaje = f"""
+        if señal != "⏸️ ESPERAR":
+            mensaje = f"""
 📈 ALERTA DE TRADING ({ticker}) [15 min]
-Precio actual: {precio:.2f}
+Precio actual: ${precio:.2f}
 RSI: {rsi:.2f}
 Señal próximos 30 min: {señal}
 📰 {titular}
 """
-        if señal != "⏸️ ESPERAR":
             mensajes.append(mensaje)
 
-    for msg in mensajes:
-        enviar_telegram(msg)
-
-    return "✅ Alerta enviada con éxito." if mensajes else "⏸️ No hubo señales de compra o venta claras."
+    if mensajes:
+        for msg in mensajes:
+            url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
+            data = {"chat_id": chat_id, "text": msg}
+            requests.post(url, data=data)
+        return "✅ Alerta(s) enviada(s) por Telegram"
+    else:
+        return "⏸️ No hubo señales de compra o venta claras"
