@@ -2,27 +2,28 @@ name: Alerta Trading Automática
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Cada 15 minutos
-  workflow_dispatch:        # También puedes ejecutarlo manualmente
+    - cron: "*/30 * * * *"  # Cada 30 minutos
+  workflow_dispatch:
 
 jobs:
   run-alerta:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Clonar repositorio
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Configurar Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: Instalar dependencias
-        run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
 
       - name: Ejecutar alerta.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python alerta.py
+        run: |
+          python alerta.py
+
