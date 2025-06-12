@@ -1,9 +1,7 @@
+Flask
 yfinance
 pandas
-matplotlib
 scikit-learn
 newsapi-python
-twilio
-flask
+requests
 newsapi
-textblob
